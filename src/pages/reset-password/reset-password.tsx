@@ -1,25 +1,22 @@
 import { FC, SyntheticEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-import { resetPasswordApi } from '@api';
 import { ResetPasswordUI } from '@ui-pages';
+import { useDispatch, useSelector } from '../../services/store';
+import {
+  selectLoginUserError,
+  selectLoginUserRequest,
+  clearError,
+  resetPassword
+} from '../../services/slices/userSlice';
 
 export const ResetPassword: FC = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [token, setToken] = useState('');
-  const [error, setError] = useState<Error | null>(null);
-
-  const handleSubmit = (e: SyntheticEvent) => {
-    e.preventDefault();
-    setError(null);
-    resetPasswordApi({ password, token })
-      .then(() => {
-        localStorage.removeItem('resetPassword');
-        navigate('/login');
-      })
-      .catch((err) => setError(err));
-  };
+  const error = useSelector(selectLoginUserError);
+  const isLoading = useSelector(selectLoginUserRequest);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem('resetPassword')) {
@@ -27,9 +24,26 @@ export const ResetPassword: FC = () => {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    if (!isLoading && !error && isSubmitted) {
+      localStorage.removeItem('resetPassword');
+      navigate('/login', { replace: true });
+    }
+  }, [isLoading, error, navigate, isSubmitted]);
+
+  const handleSubmit = (e: SyntheticEvent) => {
+    e.preventDefault();
+    if (!password || !token) {
+      return;
+    }
+    dispatch(clearError());
+    dispatch(resetPassword({ password, token }));
+    setIsSubmitted(true);
+  };
+
   return (
     <ResetPasswordUI
-      errorText={error?.message}
+      errorText={error || ''}
       password={password}
       token={token}
       setPassword={setPassword}
