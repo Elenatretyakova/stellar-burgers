@@ -12,7 +12,7 @@ export type TConstructorState = {
   error: string | null;
 };
 
-const initialState: TConstructorState = {
+export const initialState: TConstructorState = {
   constructorItems: {
     bun: null,
     ingredients: []
