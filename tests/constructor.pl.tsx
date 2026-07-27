@@ -64,37 +64,19 @@ test.describe('Конструктор бургера с HAR', () => {
   });
 
   test('Проверяем cоздание заказа', async ({ page, context }) => {
-    // Созданы моковые данные ответа на запрос данных пользователя
-    await page.route('**/auth/user', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          user: {
-            email: 'test@example.com',
-            name: 'Тестовый пользователь'
-          }
-        })
-      });
+    await page.routeFromHAR('./tests/har/user.har', {
+      url: '**/auth/user',
+      update: false
     });
 
-    // Созданы моковые данные ответа на запрос создания заказа.
-    await page.route('**/orders', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          name: 'Тестовый бургер',
-          order: { number: 12345 }
-        })
-      });
+    await page.routeFromHAR('./tests/har/order.har', {
+      url: '**/orders',
+      update: false
     });
 
     // Подставляются моковые токены авторизации.
     await page.addInitScript(() => {
-      localStorage.setItem('accessToken', 'test-token');
+      localStorage.setItem('refreshToken', 'test-token');
     });
     await context.addCookies([
       {
@@ -130,7 +112,7 @@ test.describe('Конструктор бургера с HAR', () => {
 
     const orderNumberModal = page.getByTestId('order-number');
     await expect(orderNumberModal).toBeVisible({ timeout: 15000 });
-    await expect(orderNumberModal).toContainText('12345');
+    await expect(orderNumberModal).toContainText('108495');
 
     // Проверяется, что конструктор пуст.
     await expect(page.getByTestId('constructor-bun')).toHaveCount(0, {
